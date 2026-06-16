@@ -12,24 +12,11 @@ const CHAKRA_NAMES = {
   crown: "頂輪",
 };
 
-const GOOGLE_CREDS = {
-  type: "service_account",
-  project_id: "trusty-pipe-337408",
-  private_key_id: "90adba2462bb02d18f3ccdb33e37571a0e91317a",
-  private_key: "-----BEGIN PRIVATE KEY-----\nMIIEvAIBADANBgkqhkiG9w0BAQEFAASCBKYwggSiAgEAAoIBAQC+wuvK9B5UODnJ\nACXsocNuegqGosqbIrk3/5tpLrIhOhFTcXhIH/MXKVqaPLSDUjzvKqNTOO3V772B\n9tPifUsx7SjITS2cy2nP1iEgsVIa0svvii9SzfZoiilCl96+ciQNqjcHXwLOke7f\nLEGdguVzQf6IUCDW7ALEsz4BZRV9/4/8RWGtFgguam8Uxnv3Pvm5f2HFCPMhpSjl\nfaHKEQTlzd6dGIJn+7yT2tBJaS0fMnFkIJCVwyXjBPkvsJcJS+UCEjNTaMv6Xzdh\na6Nyyk09cI+rJ9+XJtoNGVTlbEAaWtlTuK5HZkU6soDdvU2OrZqrz9vbL88lZdjo\nI5Gz1WF7AgMBAAECgf8is+VV4e599gWxr8LtSVux4e91/HCWEXHpmXHQ1UAky0bt\n5yRDsYw+YUeH7BV88ua1Lef2F0Caz0thNKp7rgZJDtvKJtJujyT5ztXu03fTIDzU\nxJfXU+nI0aKv6F6dIiaRemWs8ZvaQY18MJDjzX6Cncf5TXXQftW48uKd8KEc3Mdr\n8Xh3WDH5VlzZYa+jhd6mZSPYoNBpKJqPuu8AJI5+inNJbcAMUscsHgnZDaJO4Tei\ncMmTjku55mNadQN+ilMOrohKa7C1bViQS7iUesY+BfPAAoPt8QyUuoeMfDKKSfef\nD+MtfPnSRBF7uaQv+MDY/VlaNfQgauKLEwSefNECgYEA5uol5n7wikn3SlcuAl1M\nUOYHfNQ7HJWep5vWpN+N5TOKd6GNNlHZAb4dzL/LNjPiNIiaUrI59Jojcw/jmI6F\nZQcPq/7sYRxtJgfQlPAd9KwPEH8mKbBUrehmn0zoOsvVdGsc7iDWCc0gRN3hXyVG\nZe5MukjXFQX5RksphjtEd2cCgYEA03wXb4Gd7gG3971uROBCUX7GAXRvHcr/W5AP\n2XzwWwQugQ8OPB2VjOuEGbdxsi8qAw+pnZlnV8iXFG/288DCyN3rp61685RFAbH0\nlXm3v2W7hSE4yqcOwZ1IFwQEoW/4ZWbgagXffHmXjXntTrI0fTGTU4UPlbdMUBSQ\nFpRpnM0CgYEAyT2IeD9qrGpXzH77xu2+Y8aFAgIH3hp64UGMJ7X4eKaZZzbw1UUx\nZTZlzBneJMfEvNnL/IP8xDJM8KsJQ9v5XxlvTArnwJ5AdWNcIWC+CoykuFDHVo+o\nzML8JJqmzQ71YPc0iEcvoe0V0U65ae0XVCAA2FxArb6+BsfcUXJ3ccMCgYEAjigq\nxKx3EWacV+5AshGg4pD53j569qbekZi73rDqC/Q6okwRgH1OaqRhbrvttB2Z+ubL\nWAGnAs32KCm+8UiQZl8uKc8mB5eR7zrEsrlXt1NWAn47Y5V6CNGFhNsRlcbjTJ4j\nmYELIevF4LalurF1MPZjFtApkrTcmjPISzVF7L0CgYBU70y5Ru/TLYmN2EpQqh+p\nsIvRJ1ZZwJWjf/iyp3HyWCa+MzSVAOLQbqrPlCzrHyK1tsyzEFKRZC/QPhzF3vwC\neIHSDhNtfbrcHkCfX11RmMzj7g0HpNpoPj5gPHdhR5khqntdo6kFwDv/y5EVmXnL\nsi2ckfeckCq8hDBDTNglJw==\n-----END PRIVATE KEY-----\n",
-  client_email: "xiaoshiguang-sheets@trusty-pipe-337408.iam.gserviceaccount.com",
-  client_id: "103134830878513432453",
-  auth_uri: "https://accounts.google.com/o/oauth2/auth",
-  token_uri: "https://oauth2.googleapis.com/token",
-  auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs",
-  client_x509_cert_url: "https://www.googleapis.com/robot/v1/metadata/x509/xiaoshiguang-sheets%40trusty-pipe-337408.iam.gserviceaccount.com",
-  universe_domain: "googleapis.com",
-};
-
 async function appendToSheet(values) {
   try {
+    const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
     const auth = new google.auth.GoogleAuth({
-      credentials: GOOGLE_CREDS,
+      credentials,
       scopes: ["https://www.googleapis.com/auth/spreadsheets"],
     });
     const sheets = google.sheets({ version: "v4", auth });
