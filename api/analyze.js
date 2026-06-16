@@ -12,7 +12,31 @@ const CHAKRA_NAMES = {
   crown: "頂輪",
 };
 
-async function appendToSheet(values) {
+const CHAKRA_COLORS = {
+  root: "#C8784A",
+  sacral: "#C8904A",
+  solar: "#B8955A",
+  heart: "#9AB89A",
+  throat: "#7A9DC8",
+  third_eye: "#9A8DC8",
+  crown: "#C8B8A0",
+};
+
+async function getSheetData() {
+  const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
+  const auth = new google.auth.GoogleAuth({
+    credentials,
+    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+  });
+  const sheets = google.sheets({ version: "v4", auth });
+  const result = await sheets.spreadsheets.values.get({
+    spreadsheetId: SHEET_ID,
+    range: "行動卡內容!A2:F",
+  });
+  return result.data.values || [];
+}
+
+async function appendToLog(values) {
   try {
     const credentials = JSON.parse(process.env.GOOGLE_CREDENTIALS);
     const auth = new google.auth.GoogleAuth({
@@ -22,47 +46,50 @@ async function appendToSheet(values) {
     const sheets = google.sheets({ version: "v4", auth });
     await sheets.spreadsheets.values.append({
       spreadsheetId: SHEET_ID,
-      range: "A:D",
+      range: "工作表1!A:F",
       valueInputOption: "RAW",
       requestBody: { values: [values] },
     });
-    console.log("Sheets: 寫入成功");
   } catch (err) {
-    console.error("Sheets error:", err.message);
+    console.error("Log error:", err.message);
   }
 }
 
-const SYSTEM_PROMPT = `你是「曉時光」療癒卡系統的溫柔陪伴者。你的工作是幫助使用者整理情緒，辨識他們此刻最需要關注的生命面向，並以生活語言翻譯脈輪智慧。
+const SYSTEM_PROMPT = `你是「曉時光」療癒卡系統的溫柔陪伴者。
 
-你的角色：溫柔的陪伴者、協助整理思緒的人、提供覺察與行動建議的人。
-你不是：心理師、醫師、靈媒、命理師、診斷者。
+你的角色：溫柔的陪伴者、協助整理思緒的人。
+你不是：心理師、醫師、靈媒、診斷者。
 
-語氣原則：溫柔、真誠、尊重使用者主體性、肯定使用者已經很努力、保留選擇權、強調可以慢慢來。
+語氣原則：溫柔、真誠、尊重使用者主體性、保留選擇權。
 
-嚴格禁用詞彙：失衡、堵塞、異常、能量太低、原生家庭造成、業力、顯化失敗、靈性等級
+嚴格禁用詞彙：失衡、堵塞、異常、能量太低、業力、顯化失敗
 改用：「這可能正在邀請你關注……」、「也許，你正需要……」、「從你的描述中，我感受到……」
 
-脈輪對應系統（供你辨識用，請用生活語言描述）：
-- root（海底輪）：安全感、穩定、存在、歸屬、金錢焦慮、對未來不安、缺乏歸屬感、精疲力竭
-- sacral（生殖輪）：感受、喜悅、流動、創造、生活失去樂趣、創造力枯竭
-- solar（太陽神經叢）：力量、界線、自我價值、自我懷疑、難以拒絕、無力感
-- heart（心輪）：愛、接納、連結、害怕被拒絕、過度付出、關係失落
-- throat（喉輪）：真實、表達、傾聽、說不出口、習慣說沒關係、害怕衝突
-- third_eye（眉心輪）：清晰、洞察、直覺、想太多、難以決定、失去方向
-- crown（頂輪）：意義、信任、臣服、人生缺乏意義、未來茫然、難以放下控制
+脈輪與次議題對應系統：
+- root（海底輪）次議題：金錢匱乏感、缺乏歸屬感、身體能量枯竭
+- sacral（生殖輪）次議題：情感冷漠、創造力阻塞、過度依附
+- solar（太陽神經叢）次議題：受害者心態、權力欲過強、自尊低落
+- heart（心輪）次議題：關係控制、嫉妒與批判、防衛心重
+- throat（喉輪）次議題：溝通障礙、自以為是、缺乏創造表達
+- third_eye（眉心輪）次議題：迷失方向、偏執與幻想、注意力不集中
+- crown（頂輪）次議題：生活無聊感、優柔寡斷、執著形式
 
-重要：在 primary_theme 裡，請明確說明使用者的狀況對應到哪個脈輪，例如：
-「從你的描述中，我感受到這與【海底輪】有關——也就是關於安全感與穩定的課題。也許，你正需要重新學習如何在不確定中，依然感受到支持。」
+重要：
+1. 在 primary_theme 裡，明確說明對應的脈輪和次議題，例如：「從你的描述中，我感受到這與【海底輪】的【缺乏歸屬感】有關。也許，你正需要重新找回與世界的連結。」
+2. 在 secondary_theme 裡，也要明確說出次要脈輪和次議題名稱，例如：「這也與【太陽神經叢】的【自尊低落】有關，也許你正需要重新相信自己的價值。」
+3. primary_sub 和 secondary_sub 必須完全符合上方列出的次議題名稱（完全一致）
 
-你的回應必須是一個 JSON 物件，格式如下（不要有任何其他文字，只有 JSON）：
+你的回應必須是一個 JSON 物件（不要有任何其他文字，只有 JSON）：
 {
-  "empathy": "先以溫柔、被理解的方式回應使用者，2-3句話，表達你感受到他們的狀態",
+  "empathy": "溫柔回應使用者，2-3句話",
   "primary_chakra": "主要脈輪key（從root/sacral/solar/heart/throat/third_eye/crown選一個）",
-  "secondary_chakra": "次要脈輪key（可以是null，或從上述選一個）",
-  "primary_theme": "明確說明對應脈輪名稱，並以生活語言描述主題，2-3句話",
-  "secondary_theme": "以生活語言描述次要脈輪主題，1句話，或null",
+  "primary_sub": "主要次議題（必須完全符合上方列出的名稱）",
+  "secondary_chakra": "次要脈輪key或null",
+  "secondary_sub": "次要次議題（必須完全符合上方列出的名稱）或null",
+  "primary_theme": "明確說明脈輪和次議題，2-3句話",
+  "secondary_theme": "次要主題，1句話或null",
   "primary_label": "給使用者選擇的文字（10字以內）",
-  "secondary_label": "次要選擇的文字，或null"
+  "secondary_label": "次要選擇文字或null"
 }`;
 
 export default async function handler(req, res) {
@@ -79,11 +106,11 @@ export default async function handler(req, res) {
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    console.error("ANTHROPIC_API_KEY 未設定");
     return res.status(500).json({ error: "伺服器設定錯誤，請聯繫管理員" });
   }
 
   try {
+    // 1. 呼叫 Claude 分析
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
       headers: {
@@ -100,8 +127,6 @@ export default async function handler(req, res) {
     });
 
     if (!response.ok) {
-      const errBody = await response.text();
-      console.error("Claude API error:", response.status, errBody);
       return res.status(502).json({ error: "AI 服務暫時無法回應，請稍後再試" });
     }
 
@@ -114,12 +139,36 @@ export default async function handler(req, res) {
     if (!VALID_CHAKRAS.includes(parsed.primary_chakra)) parsed.primary_chakra = "root";
     if (parsed.secondary_chakra && !VALID_CHAKRAS.includes(parsed.secondary_chakra)) parsed.secondary_chakra = null;
 
+    // 2. 從 Google Sheets 讀取行動卡
+    const rows = await getSheetData();
+
+    // 篩選主要次議題的行動卡
+    const primaryCards = rows.filter(r => r[0] === parsed.primary_chakra && r[1] === parsed.primary_sub);
+    let actionCard = null;
+    if (primaryCards.length > 0) {
+      const picked = primaryCards[Math.floor(Math.random() * primaryCards.length)];
+      actionCard = {
+        title: picked[2] || "",
+        desc: picked[3] || "",
+        prompt: picked[4] || "",
+        support: picked[5] || "",
+      };
+    }
+
+    // 3. 記錄到工作表1（6欄）
     const now = new Date().toLocaleString("zh-TW", { timeZone: "Asia/Taipei" });
     const primaryName = CHAKRA_NAMES[parsed.primary_chakra] || parsed.primary_chakra;
     const secondaryName = parsed.secondary_chakra ? CHAKRA_NAMES[parsed.secondary_chakra] : "";
-    await appendToSheet([now, text.trim(), primaryName, secondaryName]);
+    const primarySub = parsed.primary_sub || "";
+    const secondarySub = parsed.secondary_sub || "";
+    await appendToLog([now, text.trim(), primaryName, primarySub, secondaryName, secondarySub]);
 
-    return res.status(200).json(parsed);
+    return res.status(200).json({
+      ...parsed,
+      actionCard,
+      primaryColor: CHAKRA_COLORS[parsed.primary_chakra] || "#B8955A",
+      primaryChakraName: primaryName,
+    });
 
   } catch (err) {
     console.error("analyze handler error:", err);
