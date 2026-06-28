@@ -197,24 +197,39 @@ export default function App() {
     }
   };
 
-  const handleChoose = (c) => {
+   const handleChoose = async (c) => {
     setChoice(c);
     setPage("card");
 
-    if (aiData) {
-      const choiceLabel = c === "primary" ? aiData.primary_label : aiData.secondary_label;
-      const actionTitle = aiData.actionCard?.title || "";
-      const userText = aiData.userText || "";
+    if (!aiData) return;
 
-      fetch("/api/log", {
+    const chakra = c === "primary" ? aiData.primary_chakra : aiData.secondary_chakra;
+    const sub = c === "primary" ? aiData.primary_sub : aiData.secondary_sub;
+    const choiceLabel = c === "primary" ? aiData.primary_label : aiData.secondary_label;
+    const userText = aiData.userText || "";
+
+    try {
+      const res = await fetch("/api/draw", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text: userText,
-          choice: choiceLabel,
-          actionTitle: actionTitle,
-        }),
-      }).catch(e => console.error("log error:", e));
+        body: JSON.stringify({ chakra, sub }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setAiData(prev => ({ ...prev, actionCard: data.actionCard }));
+
+        fetch("/api/log", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text: userText,
+            choice: choiceLabel,
+            actionTitle: data.actionCard?.title || "",
+          }),
+        }).catch(e => console.error("log error:", e));
+      }
+    } catch (e) {
+      console.error("draw error:", e);
     }
   };
 
